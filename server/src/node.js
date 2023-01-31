@@ -1,7 +1,11 @@
 const lnrpc = require("@radar/lnrpc");
 const env = require('./helpers/env');
 const ApiError = require("./helpers/ApiError")
+require("dotenv").config();
 
+const host = process.env.LND_RPC_URL
+const macaroon = process.env.LND_MACAROON
+const cert = process.env.LND_TLS_CERT
 
 const connectRpc = async () => {
     try {
@@ -15,14 +19,31 @@ const connectRpc = async () => {
         throw new ApiError(error.code || 500, error.message || error)
     }
 }
-
-const getInfo = async (lnRpcClient) => {
+ 
+const connectorRpc = async () => {
     try {
-        const node = await lnRpcClient.getInfo()
+        const lnRpcClient = await lnrpc.createLnRpc({
+            server: host,
+            cert: Buffer.from(cert, 'hex').toString('utf-8'),
+            macaroon
+        })
+
+        ///const info = await lnRpcClient.getInfo()
+        return lnRpcClient
+    } catch (error) {
+        throw new ApiError(error.code || 500, error.message || error)
+    }
+}
+
+const getInfo = async () => {
+    try {
+        const lnRpcClient = await connectorRpc();
+        console.log(lnRpcClient);
+        const node = await lnRpcClient.getInfo();
         return node;
     } catch (error) {
         throw new ApiError(error.code || 500, error.message || error)   
-    }
+    } 
 }
 
 const subscribeToInvoices = async () => {
@@ -76,5 +97,6 @@ module.exports = {
     subscribeToInvoices,
     generateInvoice,
     invoiceLookUp,
-    decodeInvoice
+    decodeInvoice,
+    connectorRpc
 };

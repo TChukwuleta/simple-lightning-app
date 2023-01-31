@@ -12,8 +12,8 @@ class Posts {
             hasPaid: false
         };
         this.posts.push(post);
-        return post;
-    } 
+        return post; 
+    }  
 
     // Get a particar post given an Id
     getPost(id) {

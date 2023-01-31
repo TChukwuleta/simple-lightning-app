@@ -3,6 +3,7 @@ const expressWs = require("express-ws");
 const env = require("./src/helpers/env");
 const { 
     connectRpc, 
+    connectorRpc,
     getInfo, 
     invoiceLookUp,
     generateInvoice
@@ -11,7 +12,8 @@ const cors = require("cors");
 const Posts = require("./src/posts")
 
 // Configure server
-const app = expressWs(express()).app;
+// const app = expressWs(express()).app;
+const app = express();
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 
@@ -21,19 +23,16 @@ let posts = new Posts()
 app.get("/", async (req, res, next) => {
     try {
         const info = await getInfo();
-        res.send(`
-            <h1>Node info</h1>
-            <pre>${JSON.stringify(info, null, 2)}</pre>
-        `);
+        res.status(200).send(info)
         next();
     } catch (error) {
         next(error)
     }
 });
 
-app.ws("/api/posts", (ws) => {
+app.get("/api/posts", (req, res) => {
     //posts.getPaidPosts()
-    ws.status(200).json({
+    res.status(200).json({
         data: posts.getPaidPosts()
     })
 })
@@ -81,7 +80,7 @@ app.post("/api/invoicelookup", async (req, res) => {
 
 // Initialize node and server
 console.log('Initializing lightning node...');
-connectRpc().then((lnRpc) => {
+connectorRpc().then((lnRpc) => {
     console.log("Lightning node initialized!");
     console.log('Starting server...');
     app.listen(env.PORT, () => {
@@ -89,17 +88,17 @@ connectRpc().then((lnRpc) => {
     })
 
     // Subscribe to all invoices, mark posts as paid
-    const stream = lnRpc.subscribeInvoices();
-    stream.on('data', chunk => {
-        // Skip unpaid / irrelevant invoice updates
-        if(!chunk.settled || !chunk.amtPaidSat || !chunk.memo) return;
+    // const stream = lnRpc.subscribeInvoices();
+    // stream.on('data', chunk => {
+    //     // Skip unpaid / irrelevant invoice updates
+    //     if(!chunk.settled || !chunk.amtPaidSat || !chunk.memo) return;
     
-        // Extract post id from memo, skip if we cant find an id
-        const id = parseInt(chunk.memo.replace('Lightning Posts post #', ''), 10);
-        if(!id) return;
+    //     // Extract post id from memo, skip if we cant find an id
+    //     const id = parseInt(chunk.memo.replace('Lightning Posts post #', ''), 10);
+    //     if(!id) return;
     
-        // Mark the invoice as paid!
-        posts.markPostAsPaid(id);
-    });
+    //     // Mark the invoice as paid!
+    //     posts.markPostAsPaid(id);
+    // });
 });
 
